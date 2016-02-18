@@ -1,0 +1,53 @@
+<script type="text/javascript">
+    // <![CDATA[
+    cris.workflow = {};
+
+    cris.workflow.app = {
+        init: function() {
+            
+            
+            var fileList = dojo.fromJson("${d90d61c6-32b8-4b63-86b3-e691507d14a9.ftpFiles[]({_job_id : #{current_job_id}})}");
+            console.dir(fileList);
+            var fileListTable = dojo.byId('idTable');
+            for (var i = 0; i < fileList.length; i++) {
+                var description = fileList[i].metadata_description;
+                var file = fileList[i].metadata_file;
+                var htmlLink = buildDownloadLink(file, "Link");
+//                alert(htmlLink);
+                var nodeTR = dojo.create("tr", null, fileListTable);
+                dojo.create("td", {innerHTML: description}, nodeTR);
+                dojo.create("td", {innerHTML: htmlLink}, nodeTR);
+            } 
+        }
+    };
+
+    cris.ready(function() {
+        cris.workflow.app.init();
+    });
+    // ]]>
+</script>
+<div>
+    <h1 id="idHeader"></h1>
+    
+    <div>
+            <!-- <h4 style="float: middle; margin-left: 30px">WQFS Plot Map</h4> -->
+            <img id="idImage" src="uninitialized" style="width: 350px; height: 550px; float: middle; margin-left: 50px">
+        
+            <table id="idTable" border="1" style="float: left;">
+                <tr>
+                    <th>Description</th>
+                    <th>Access Link</th>
+                </tr>
+                <tr>
+                    <td>WQFS Website</td>
+                    <td><a id="idWebsiteLink" href="uninitialized" target="_blank"></a></td>
+                </tr>
+            </table>
+    </div>
+    <br class="clearBoth">
+    
+    <p></p>
+    <div>
+        <a id="idFile" href="uninitialized"></a>
+    </div>
+</div>

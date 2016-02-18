@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:activiti="http://activiti.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" xmlns:cris="edu.purdue.cybercenter.dm" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="edu.purdue.cybercenter.dm">
+  <process id="id_dee9b5f1-7b2a-42e6-9351-67a4d7a2a049" name="Export WQFS Data" isExecutable="true">
+    <extensionElements>
+      <activiti:executionListener event="start" class="edu.purdue.cybercenter.dm.activiti.CrisExecutionListener">
+        <activiti:field name="initialDatasetState">
+          <activiti:string><![CDATA[0]]></activiti:string>
+        </activiti:field>
+        <activiti:field name="finalDatasetStates">
+          <activiti:string><![CDATA[[1]]]></activiti:string>
+        </activiti:field>
+      </activiti:executionListener>
+      <activiti:executionListener event="end" class="edu.purdue.cybercenter.dm.activiti.CrisExecutionListener">
+        <activiti:field name="initialDatasetState">
+          <activiti:string><![CDATA[0]]></activiti:string>
+        </activiti:field>
+        <activiti:field name="finalDatasetStates">
+          <activiti:string><![CDATA[[1]]]></activiti:string>
+        </activiti:field>
+      </activiti:executionListener>
+      <cris:field name="uuid" stringValue="dee9b5f1-7b2a-42e6-9351-67a4d7a2a049"></cris:field>
+      <cris:field name="cris-workflow-implementation-version" stringValue="1.0.0"></cris:field>
+    </extensionElements>
+    <startEvent id="theStart" activiti:initiator="initiator"></startEvent>
+    <endEvent id="theEnd"></endEvent>
+    <userTask id="task_1" name="Download the excel file" activiti:formKey="baa57e55-7801-4e26-89c7-e4d9be867c5e">
+      <documentation>Download excel file</documentation>
+      <extensionElements>
+        <activiti:formProperty id="jsonIn" name="{&quot;baa57e55-7801-4e26-89c7-e4d9be867c5e&quot;: ${baa57e55-7801-4e26-89c7-e4d9be867c5e({_job_id : #{current_job_id}})}}" type="string"></activiti:formProperty>
+        <activiti:executionListener event="start" class="edu.purdue.cybercenter.dm.activiti.CrisActivityListener">
+          <activiti:field name="datasetState">
+            <activiti:string><![CDATA[0]]></activiti:string>
+          </activiti:field>
+        </activiti:executionListener>
+        <activiti:executionListener event="end" class="edu.purdue.cybercenter.dm.activiti.CrisActivityListener">
+          <activiti:field name="datasetState">
+            <activiti:string><![CDATA[0]]></activiti:string>
+          </activiti:field>
+        </activiti:executionListener>
+        <activiti:taskListener event="assignment" class="edu.purdue.cybercenter.dm.activiti.CrisTaskListener"></activiti:taskListener>
+        <activiti:taskListener event="create" class="edu.purdue.cybercenter.dm.activiti.CrisTaskListener"></activiti:taskListener>
+        <activiti:taskListener event="complete" class="edu.purdue.cybercenter.dm.activiti.CrisTaskListener"></activiti:taskListener>
+        <cris:field name="uiLocation" stringValue="4,673"></cris:field>
+        <cris:field name="orientation" stringValue="normal"></cris:field>
+        <cris:field name="files" stringValue="wqfs_data_export_3.html;error.html"></cris:field>
+      </extensionElements>
+    </userTask>
+    <serviceTask id="task_2" name="Generate Excel Files for Flow and VWC/Temp" activiti:class="edu.purdue.cybercenter.dm.activiti.ServiceTaskDelegate">
+      <documentation>Generate Excel Files for Flow and VWC/Temp</documentation>
+      <extensionElements>
+        <activiti:field name="filesToPlace">
+          <activiti:string><![CDATA[EmbeddedFile:generateFlowVWCTempExcelSheet.py:generateFlowVWCTempExcelSheet.py;ToFile:${266ac488-f15c-47df-815a-f00b06f04b0f[]({"isoDay":{ $gte:${51713094-27a7-44eb-8a2a-1fca64f4d9c1.startDay({"_job_id":#{current_job_id}})},$lte:${51713094-27a7-44eb-8a2a-1fca64f4d9c1.endDay({"_job_id":#{current_job_id}})}}},$orderby:{isoDay:1,calculatedtime:1})}:ftpInputData]]></activiti:string>
+        </activiti:field>
+        <activiti:field name="commandLine">
+          <activiti:string><![CDATA[python26 generateFlowVWCTempExcelSheet.py]]></activiti:string>
+        </activiti:field>
+        <activiti:field name="filesToCollect">
+          <activiti:string><![CDATA[baa57e55-7801-4e26-89c7-e4d9be867c5e.downloadFiles:HutDataZip.zip]]></activiti:string>
+        </activiti:field>
+        <activiti:executionListener event="start" class="edu.purdue.cybercenter.dm.activiti.CrisActivityListener">
+          <activiti:field name="datasetState">
+            <activiti:string><![CDATA[0]]></activiti:string>
+          </activiti:field>
+        </activiti:executionListener>
+        <activiti:executionListener event="end" class="edu.purdue.cybercenter.dm.activiti.CrisActivityListener">
+          <activiti:field name="datasetState">
+            <activiti:string><![CDATA[0]]></activiti:string>
+          </activiti:field>
+        </activiti:executionListener>
+        <cris:field name="uiLocation" stringValue="3,400"></cris:field>
+        <cris:field name="orientation" stringValue="normal"></cris:field>
+        <cris:field name="files" stringValue="generateFlowVWCTempExcelSheet.py"></cris:field>
+      </extensionElements>
+    </serviceTask>
+    <userTask id="task_3" name="Enter range of data for which data should be exported" activiti:formKey="51713094-27a7-44eb-8a2a-1fca64f4d9c1">
+      <documentation>Enter range of data for which data should be exported</documentation>
+      <extensionElements>
+        <activiti:formProperty id="jsonIn" type="string"></activiti:formProperty>
+        <activiti:executionListener event="start" class="edu.purdue.cybercenter.dm.activiti.CrisActivityListener">
+          <activiti:field name="datasetState">
+            <activiti:string><![CDATA[1]]></activiti:string>
+          </activiti:field>
+        </activiti:executionListener>
+        <activiti:executionListener event="end" class="edu.purdue.cybercenter.dm.activiti.CrisActivityListener">
+          <activiti:field name="datasetState">
+            <activiti:string><![CDATA[1]]></activiti:string>
+          </activiti:field>
+        </activiti:executionListener>
+        <activiti:taskListener event="assignment" class="edu.purdue.cybercenter.dm.activiti.CrisTaskListener"></activiti:taskListener>
+        <activiti:taskListener event="create" class="edu.purdue.cybercenter.dm.activiti.CrisTaskListener"></activiti:taskListener>
+        <activiti:taskListener event="complete" class="edu.purdue.cybercenter.dm.activiti.CrisTaskListener"></activiti:taskListener>
+        <cris:field name="uiLocation" stringValue="4,92"></cris:field>
+        <cris:field name="orientation" stringValue="normal"></cris:field>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="flow_1" sourceRef="theStart" targetRef="task_3"></sequenceFlow>
+    <sequenceFlow id="flow_2" sourceRef="task_2" targetRef="task_1"></sequenceFlow>
+    <sequenceFlow id="flow_3" sourceRef="task_3" targetRef="task_2"></sequenceFlow>
+    <sequenceFlow id="flow_4" sourceRef="task_1" targetRef="theEnd"></sequenceFlow>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_id_dee9b5f1-7b2a-42e6-9351-67a4d7a2a049">
+    <bpmndi:BPMNPlane bpmnElement="id_dee9b5f1-7b2a-42e6-9351-67a4d7a2a049" id="BPMNPlane_id_dee9b5f1-7b2a-42e6-9351-67a4d7a2a049"></bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

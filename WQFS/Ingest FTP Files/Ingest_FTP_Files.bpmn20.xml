@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:activiti="http://activiti.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" xmlns:cris="edu.purdue.cybercenter.dm" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="edu.purdue.cybercenter.dm">
+  <process id="id_1bcd63e9-c8f4-4e76-8cd6-66af447e6d92" name="Ingest FTP Files" isExecutable="true">
+    <extensionElements>
+      <activiti:executionListener event="start" class="edu.purdue.cybercenter.dm.activiti.CrisExecutionListener">
+        <activiti:field name="initialDatasetState">
+          <activiti:string><![CDATA[0]]></activiti:string>
+        </activiti:field>
+        <activiti:field name="finalDatasetStates">
+          <activiti:string><![CDATA[[1]]]></activiti:string>
+        </activiti:field>
+      </activiti:executionListener>
+      <activiti:executionListener event="end" class="edu.purdue.cybercenter.dm.activiti.CrisExecutionListener">
+        <activiti:field name="initialDatasetState">
+          <activiti:string><![CDATA[0]]></activiti:string>
+        </activiti:field>
+        <activiti:field name="finalDatasetStates">
+          <activiti:string><![CDATA[[1]]]></activiti:string>
+        </activiti:field>
+      </activiti:executionListener>
+      <cris:field name="uuid" stringValue="1bcd63e9-c8f4-4e76-8cd6-66af447e6d92"></cris:field>
+      <cris:field name="cris-workflow-implementation-version" stringValue="1.0.0"></cris:field>
+    </extensionElements>
+    <startEvent id="theStart" activiti:initiator="initiator"></startEvent>
+    <endEvent id="theEnd"></endEvent>
+    <exclusiveGateway id="exgw_1" name="Please provide a name">
+      <documentation>Please provide documentation</documentation>
+      <extensionElements>
+        <cris:field name="uiLocation" stringValue="104,536"></cris:field>
+        <cris:field name="orientation" stringValue="flipped"></cris:field>
+      </extensionElements>
+    </exclusiveGateway>
+    <serviceTask id="task_1" name="Data Calibrations" activiti:class="edu.purdue.cybercenter.dm.activiti.ServiceTaskDelegate">
+      <documentation>Calibrate data based on expected values 
+Input Data - Current Data, Calibration Template, Previous Day's Data</documentation>
+      <extensionElements>
+        <activiti:field name="filesToPlace">
+          <activiti:string><![CDATA[EmbeddedFile:calibration.py:calibration.py]]></activiti:string>
+        </activiti:field>
+        <activiti:field name="jsonIn">
+          <activiti:string><![CDATA[${266ac488-f15c-47df-815a-f00b06f04b0f[]({"_job_id":#{current_job_id}})};${bf2edcd5-e1c8-44d9-8888-0993588de83c[]({"startDate":{$lte:${previousDay}},"endDate":{$gte:${previousDay}}})};${266ac488-f15c-47df-815a-f00b06f04b0f[]({"JDay":${prevJDay},"Year":${year}})}]]></activiti:string>
+        </activiti:field>
+        <activiti:field name="commandLine">
+          <activiti:string><![CDATA[python26 calibration.py]]></activiti:string>
+        </activiti:field>
+        <activiti:executionListener event="start" class="edu.purdue.cybercenter.dm.activiti.CrisActivityListener">
+          <activiti:field name="datasetState">
+            <activiti:string><![CDATA[0]]></activiti:string>
+          </activiti:field>
+        </activiti:executionListener>
+        <activiti:executionListener event="end" class="edu.purdue.cybercenter.dm.activiti.CrisActivityListener">
+          <activiti:field name="datasetState">
+            <activiti:string><![CDATA[0]]></activiti:string>
+          </activiti:field>
+        </activiti:executionListener>
+        <cris:field name="uiLocation" stringValue="308,515"></cris:field>
+        <cris:field name="orientation" stringValue="normal"></cris:field>
+        <cris:field name="files" stringValue="calibration.py"></cris:field>
+      </extensionElements>
+    </serviceTask>
+    <userTask id="task_2" name="Upload FTP Files" activiti:formKey="d90d61c6-32b8-4b63-86b3-e691507d14a9">
+      <documentation>Please select the files you would like to upload.</documentation>
+      <extensionElements>
+        <activiti:formProperty id="jsonIn" type="string"></activiti:formProperty>
+        <activiti:executionListener event="start" class="edu.purdue.cybercenter.dm.activiti.CrisActivityListener">
+          <activiti:field name="datasetState">
+            <activiti:string><![CDATA[4]]></activiti:string>
+          </activiti:field>
+        </activiti:executionListener>
+        <activiti:executionListener event="end" class="edu.purdue.cybercenter.dm.activiti.CrisActivityListener">
+          <activiti:field name="datasetState">
+            <activiti:string><![CDATA[4]]></activiti:string>
+          </activiti:field>
+        </activiti:executionListener>
+        <activiti:taskListener event="assignment" class="edu.purdue.cybercenter.dm.activiti.CrisTaskListener"></activiti:taskListener>
+        <activiti:taskListener event="create" class="edu.purdue.cybercenter.dm.activiti.CrisTaskListener"></activiti:taskListener>
+        <activiti:taskListener event="complete" class="edu.purdue.cybercenter.dm.activiti.CrisTaskListener"></activiti:taskListener>
+        <cris:field name="uiLocation" stringValue="2,132"></cris:field>
+        <cris:field name="orientation" stringValue="normal"></cris:field>
+      </extensionElements>
+    </userTask>
+    <userTask id="task_3" name="Successful File Upload" activiti:formKey="dataFileSuccess.html">
+      <extensionElements>
+        <activiti:formProperty id="jsonIn" name="{}" type="string"></activiti:formProperty>
+        <activiti:executionListener event="start" class="edu.purdue.cybercenter.dm.activiti.CrisActivityListener">
+          <activiti:field name="datasetState">
+            <activiti:string><![CDATA[0]]></activiti:string>
+          </activiti:field>
+        </activiti:executionListener>
+        <activiti:executionListener event="end" class="edu.purdue.cybercenter.dm.activiti.CrisActivityListener">
+          <activiti:field name="datasetState">
+            <activiti:string><![CDATA[0]]></activiti:string>
+          </activiti:field>
+        </activiti:executionListener>
+        <activiti:taskListener event="assignment" class="edu.purdue.cybercenter.dm.activiti.CrisTaskListener"></activiti:taskListener>
+        <activiti:taskListener event="create" class="edu.purdue.cybercenter.dm.activiti.CrisTaskListener"></activiti:taskListener>
+        <activiti:taskListener event="complete" class="edu.purdue.cybercenter.dm.activiti.CrisTaskListener"></activiti:taskListener>
+        <cris:field name="uiLocation" stringValue="308,711"></cris:field>
+        <cris:field name="orientation" stringValue="normal"></cris:field>
+        <cris:field name="files" stringValue="dataFileSuccess.html"></cris:field>
+      </extensionElements>
+    </userTask>
+    <serviceTask id="task_4" name="Ingest Files" activiti:class="edu.purdue.cybercenter.dm.activiti.ServiceTaskDelegate">
+      <extensionElements>
+        <activiti:field name="filesToPlace">
+          <activiti:string><![CDATA[EmbeddedFile:wqfs.py:wqfs.py;${d90d61c6-32b8-4b63-86b3-e691507d14a9.ftpFiles({"_job_id":#{current_job_id}})}:]]></activiti:string>
+        </activiti:field>
+        <activiti:field name="jsonIn">
+          <activiti:string><![CDATA[${rows_modified};${rows_deleted}]]></activiti:string>
+        </activiti:field>
+        <activiti:field name="commandLine">
+          <activiti:string><![CDATA[python26 wqfs.py]]></activiti:string>
+        </activiti:field>
+        <activiti:executionListener event="start" class="edu.purdue.cybercenter.dm.activiti.CrisActivityListener">
+          <activiti:field name="datasetState">
+            <activiti:string><![CDATA[0]]></activiti:string>
+          </activiti:field>
+        </activiti:executionListener>
+        <activiti:executionListener event="end" class="edu.purdue.cybercenter.dm.activiti.CrisActivityListener">
+          <activiti:field name="datasetState">
+            <activiti:string><![CDATA[0]]></activiti:string>
+          </activiti:field>
+        </activiti:executionListener>
+        <cris:field name="uiLocation" stringValue="305,43"></cris:field>
+        <cris:field name="orientation" stringValue="normal"></cris:field>
+        <cris:field name="files" stringValue="wqfs.py"></cris:field>
+      </extensionElements>
+    </serviceTask>
+    <serviceTask id="task_5" name="Validate files uploaded" activiti:class="edu.purdue.cybercenter.dm.activiti.ServiceTaskDelegate">
+      <documentation>Validate the data uploaded</documentation>
+      <extensionElements>
+        <activiti:field name="filesToPlace">
+          <activiti:string><![CDATA[EmbeddedFile:validate.py:validate.py;${d90d61c6-32b8-4b63-86b3-e691507d14a9.ftpFiles({"_job_id":#{current_job_id}})}:]]></activiti:string>
+        </activiti:field>
+        <activiti:field name="commandLine">
+          <activiti:string><![CDATA[python26 validate.py]]></activiti:string>
+        </activiti:field>
+        <activiti:executionListener event="start" class="edu.purdue.cybercenter.dm.activiti.CrisActivityListener">
+          <activiti:field name="datasetState">
+            <activiti:string><![CDATA[0]]></activiti:string>
+          </activiti:field>
+        </activiti:executionListener>
+        <activiti:executionListener event="end" class="edu.purdue.cybercenter.dm.activiti.CrisActivityListener">
+          <activiti:field name="datasetState">
+            <activiti:string><![CDATA[0]]></activiti:string>
+          </activiti:field>
+        </activiti:executionListener>
+        <cris:field name="uiLocation" stringValue="2,380"></cris:field>
+        <cris:field name="orientation" stringValue="normal"></cris:field>
+        <cris:field name="files" stringValue="validate.py"></cris:field>
+      </extensionElements>
+    </serviceTask>
+    <serviceTask id="task_6" name="Update Date and Time" activiti:class="edu.purdue.cybercenter.dm.activiti.ServiceTaskDelegate">
+      <documentation>1. Calculate Julian Date and Year
+2. Create local variable which holds the current julian date and year
+3.Calculate previous day, julian day and year</documentation>
+      <extensionElements>
+        <activiti:field name="filesToPlace">
+          <activiti:string><![CDATA[EmbeddedFile:calculateJulianDate.py:calculateJulianDate.py]]></activiti:string>
+        </activiti:field>
+        <activiti:field name="jsonIn">
+          <activiti:string><![CDATA[${266ac488-f15c-47df-815a-f00b06f04b0f[]({"_job_id":#{current_job_id}})}]]></activiti:string>
+        </activiti:field>
+        <activiti:field name="commandLine">
+          <activiti:string><![CDATA[python26 calculateJulianDate.py]]></activiti:string>
+        </activiti:field>
+        <activiti:executionListener event="start" class="edu.purdue.cybercenter.dm.activiti.CrisActivityListener">
+          <activiti:field name="datasetState">
+            <activiti:string><![CDATA[0]]></activiti:string>
+          </activiti:field>
+        </activiti:executionListener>
+        <activiti:executionListener event="end" class="edu.purdue.cybercenter.dm.activiti.CrisActivityListener">
+          <activiti:field name="datasetState">
+            <activiti:string><![CDATA[0]]></activiti:string>
+          </activiti:field>
+        </activiti:executionListener>
+        <cris:field name="uiLocation" stringValue="309,286"></cris:field>
+        <cris:field name="orientation" stringValue="normal"></cris:field>
+        <cris:field name="files" stringValue="calculateJulianDate.py"></cris:field>
+      </extensionElements>
+    </serviceTask>
+    <userTask id="task_7" name="Error in Uploading" activiti:formKey="dataFileError.html">
+      <extensionElements>
+        <activiti:formProperty id="jsonIn" name="{}" type="string"></activiti:formProperty>
+        <activiti:executionListener event="start" class="edu.purdue.cybercenter.dm.activiti.CrisActivityListener">
+          <activiti:field name="datasetState">
+            <activiti:string><![CDATA[0]]></activiti:string>
+          </activiti:field>
+        </activiti:executionListener>
+        <activiti:executionListener event="end" class="edu.purdue.cybercenter.dm.activiti.CrisActivityListener">
+          <activiti:field name="datasetState">
+            <activiti:string><![CDATA[0]]></activiti:string>
+          </activiti:field>
+        </activiti:executionListener>
+        <activiti:taskListener event="assignment" class="edu.purdue.cybercenter.dm.activiti.CrisTaskListener"></activiti:taskListener>
+        <activiti:taskListener event="create" class="edu.purdue.cybercenter.dm.activiti.CrisTaskListener"></activiti:taskListener>
+        <activiti:taskListener event="complete" class="edu.purdue.cybercenter.dm.activiti.CrisTaskListener"></activiti:taskListener>
+        <cris:field name="uiLocation" stringValue="3,658"></cris:field>
+        <cris:field name="orientation" stringValue="normal"></cris:field>
+        <cris:field name="files" stringValue="dataFileError.html"></cris:field>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="flow_1" sourceRef="theStart" targetRef="task_2"></sequenceFlow>
+    <sequenceFlow id="flow_2" sourceRef="task_4" targetRef="task_6"></sequenceFlow>
+    <sequenceFlow id="flow_3" sourceRef="task_2" targetRef="task_5"></sequenceFlow>
+    <sequenceFlow id="flow_4" sourceRef="task_1" targetRef="task_3"></sequenceFlow>
+    <sequenceFlow id="flow_5" sourceRef="task_5" targetRef="exgw_1"></sequenceFlow>
+    <sequenceFlow id="flow_6" sourceRef="task_6" targetRef="task_1"></sequenceFlow>
+    <sequenceFlow id="flow_7" sourceRef="exgw_1" targetRef="task_4">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${isValid == "true"}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow_8" sourceRef="exgw_1" targetRef="task_7"></sequenceFlow>
+    <sequenceFlow id="flow_9" sourceRef="task_3" targetRef="theEnd"></sequenceFlow>
+    <sequenceFlow id="flow_10" sourceRef="task_7" targetRef="theEnd"></sequenceFlow>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_id_1bcd63e9-c8f4-4e76-8cd6-66af447e6d92">
+    <bpmndi:BPMNPlane bpmnElement="id_1bcd63e9-c8f4-4e76-8cd6-66af447e6d92" id="BPMNPlane_id_1bcd63e9-c8f4-4e76-8cd6-66af447e6d92"></bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

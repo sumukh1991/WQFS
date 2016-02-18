@@ -1,0 +1,22 @@
+<script type="text/javascript">
+    // <![CDATA[
+    cris.workflow = {};
+
+    cris.workflow.app = {
+        init: function() {		
+			if(String(dojo.fromJson('${isValid}')) == String(true)){
+				dojo.byId("msgs").innerHTML = dojo.fromJson('${success_message}');
+			}
+			else{
+				dojo.byId("msgs").innerHTML = dojo.fromJson('${error_message}');
+			}
+        }
+    };
+
+    cris.ready(function() {
+        cris.workflow.app.init();
+    });
+    // ]]>
+</script>
+
+<div id="msgs"></div>

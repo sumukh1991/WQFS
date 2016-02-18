@@ -1,0 +1,17 @@
+<script type="text/javascript">
+    // <![CDATA[
+    cris.workflow = {};
+
+    cris.workflow.app = {
+        init: function() {
+            dojo.byId("errors").innerHTML = dojo.fromJson('${error_message}');
+        }
+    };
+
+    cris.ready(function() {
+        cris.workflow.app.init();
+    });
+    // ]]>
+</script>
+
+<div id="errors"></div>
