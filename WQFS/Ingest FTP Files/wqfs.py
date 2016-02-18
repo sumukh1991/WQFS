@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 '''
+Authors:
 Craig West
-west1@purdue.edu
-Modified by:
 Sheifali Khare
+Sumukh Hallymysore Ravindra
+
 Parsing WQFS Data Files
 (C) Purdue University 2015
 '''
@@ -16,8 +17,7 @@ import csv
 
 hut_number = 0
 output = {
-	'isValid':'true',
-	'266ac488-f15c-47df-815a-f00b06f04b0f': [dict() for d in xrange(24)]  # initialize our 24 entries
+	'266ac488-f15c-47df-815a-f00b06f04b0f':[dict() for d in xrange(24)] # initialize our 24 entries
 	}
 	
 	
@@ -63,7 +63,6 @@ def parse_file(filename,rows_modified_dict,rows_deleted_dict,hut_name):
 	global output
 	rows_modified = find_rows(rows_modified_dict,hut_name)
 	rows_deleted = find_rows(rows_deleted_dict,hut_name)
-	#print str(rows_deleted)
 	# open our utf-16 encdode file for reading
 	with io.open(filename, 'r', encoding='utf-16-le') as fr:
 		calc_time = 100 #the first row will be of time 0100
@@ -86,6 +85,7 @@ def parse_file(filename,rows_modified_dict,rows_deleted_dict,hut_name):
 						output_data['Temp'] = []
 						output_data['Hut'] = []
 						output_data['rawTime'] = []
+						output_data['annotation'] = []
 							
 					# Go over each column in the row
 					for colNum, col in enumerate(row.replace('\n','').split(',')):
@@ -169,7 +169,10 @@ def parse_file(filename,rows_modified_dict,rows_deleted_dict,hut_name):
 						output_data['calculatedtime'] = str(calc_time)
 					calc_time += 100
 					if newRowNo in rows_modified:
-						output_data['annotation'] = 'yes'
+						tmp5 = {}
+						tmp5['hut'] = hut_number
+						tmp5['annotationText'] = 'yes'
+						output_data['annotation'].append(tmp5)
 				newRowNo = newRowNo + 1
 
 '''
@@ -186,35 +189,36 @@ def main():
 	'''
 	global output
 	global hut_number
-	# try:
-	num_files = 0
-	inputData = sys.stdin.read()
-	fw = open("jsonWQFSInput", "w")
-	fw.write(inputData)
-	fw.close()
-	
-	data = inputData.split(";")
-	#print data
-	rows_modified_dict = json.loads(data[0])
-	rows_deleted_dict = json.loads(data[1])
-	hut_num_dict = create_hut_dict()	
-	# Iterate the current directory looking
-	# for the CSV files
-	for f in sorted(os.listdir(os.getcwd())):
-		if f.endswith('.csv'):
-			hutName = str(f).split("_")[0].split("-")			
-			hut_number = hut_num_dict[str(hutName[1])] 
-			parse_file(f,rows_modified_dict,rows_deleted_dict,hutName[1])
-	
-	output['success_message'] = 'Data extracted from file to template successfully. '		
-	f = open('jsonOutput', 'w')
-	f.write(json.dumps(output))
-	# except Exception as e:
-		# output['isValid'] = 'false'
-		# del output['266ac488-f15c-47df-815a-f00b06f04b0f']
-		# output['error_message'] = str(e)
-	
-
+	try:
+		num_files = 0
+		inputData = sys.stdin.read()
+		fw = open("jsonWQFSInput", "w")
+		fw.write(inputData)
+		fw.close()
+		
+		data = inputData.split(";")
+		#print data
+		rows_modified_dict = json.loads(data[0])
+		rows_deleted_dict = json.loads(data[1])
+		previous_records = json.loads(data[2])
+		if len(previous_records) != 0 :
+			raise Exception("Error. Records already present for this date.")
+		hut_num_dict = create_hut_dict()	
+		# Iterate the current directory looking
+		# for the CSV files
+		for f in sorted(os.listdir(os.getcwd())):
+			if f.endswith('.csv'):
+				hutName = str(f).split("_")[0].split("-")			
+				hut_number = hut_num_dict[str(hutName[1])] 
+				parse_file(f,rows_modified_dict,rows_deleted_dict,hutName[1])
+		
+		output['success_message'] = 'Data extracted from file to template successfully. '
+		output['isValid'] = 'true'		
+		f = open('jsonOutput', 'w')
+		f.write(json.dumps(output))
+	except Exception as e:
+		output['isValid'] = 'false'
+		output['error_message'] = str(e)
 	print json.dumps(output)
 
 '''

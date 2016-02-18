@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 '''
+Authors:
 Craig West
-west1@purdue.edu
-
-Modified By:
 Sheifali Khare
+Sumukh Hallymysore Ravindra
 
 Parsing WQFS Data Files
 (C) Purdue University 2015
@@ -18,7 +17,7 @@ import csv
 import itertools
 
 output = {
-	'isValid':'true'
+	'isValid':'false'
 	}
 #Dictionary to store rows which have been deleted corresponding to the Hut
 rows_modified_dict = dict();
@@ -191,13 +190,13 @@ def check_file_columns(f,hcol_count,htile_count,hvwctemp_count):
 				status = False
 				tiles_missing = findMissingColumns(rowheader,htile_names[hutName],'tile')
 				errString = 'Following tile column/s is missing for Hut ' + hutName +': ' + str(tiles_missing)
-				errorMsg.append(errString)				
-			
+				errorMsg.append(errString)	
+
 			if(utc_count != 1):			
 				status = False
 				errString = 'UTCMinus column is missing for Hut ' + hutName
 				errorMsg.append(errString)
-			
+
 			if(hvwctemp_count[hutName] != vwc_sensor_count):					
 				status = False
 				tiles_missing = findMissingColumns(rowheader,h_vwc_temp_cols[hutName],'VWC')
@@ -348,36 +347,51 @@ def main():
 	htile_dict = create_tile_hut_dict()
 	hvwctemp_count = create_vwc_temp_count_dict()
 	try:
-	
+		previous_file_date = ''
+		file_dates = ''
+		huts_list = set();
 		# Iterate the current directory looking
 		# for the CSV files
 		for f in os.listdir(os.getcwd()):
 			if f.endswith('.csv'):
+				# Get the date-time fields from the file name to compare with other file names 
+				file_dates = f.split('.')[0].split('_')[3].split('-')
+				file_date = file_dates[0] +'-'+ file_dates[1] +'-'+ file_dates[2]
+				# Verify if they belong to same date, abort if not
+				if ( previous_file_date != '') and ( file_date != previous_file_date ):
+					raise Exception("Error: Files do not belong to same date.")
+				else:
+					previous_file_date = file_date
 				if num_lines(f) > 25:
 					fix_data_file(f)
 				elif num_lines(f) < 25:
 					err_file_list.append(os.path.basename(f))
-					raise Exception("Following files contains less than 24 entries: {0}".format(','.join(err_file_list)))				
+					raise Exception("Error: Following files contains less than 24 entries: {0}".format(','.join(err_file_list)))
 				status,errMsg = check_file_columns(f,hcol_dict,htile_dict,hvwctemp_count)
 				if status == False:
-
-						raise Exception(str(errMsg))			
-					
-				num_files += 1 
-					
+					raise Exception(str(errMsg))
+				huts_list.add(f.split('.')[0].split('_')[0]) 
+				num_files += 1
 		if num_files == 0:
-				raise Exception('There were no CSV files to upload')
+			raise Exception('Error: There are no CSV files to upload.')
 		elif num_files != 12:
-			raise Exception('Expecting exactly 12 files to be uploaded.')
+			raise Exception('Error: Expecting 12 files to be uploaded. Found '+str(num_files))
 		else:
+			num_files = 0
+			for hut in huts_list:
+				num_files += 1
+			if num_files != 12:
+				raise Exception('Error: Duplicate files found.')
+			output['isValid'] = 'true'
 			output['rows_modified'] = rows_modified_dict
 			output['rows_deleted'] = rows_delete_dict
 			output['success_message'] = 'The files were successfully uploaded.'
+			date_val = int(file_dates[2])-2
+			if date_val < 10 :
+				date_val = '0'+str(date_val)
+			output['iso_date'] = file_dates[0] +'-'+ file_dates[1] +'-'+ date_val + 'T00:00:00'
 	except Exception as e:
-		
-		output['isValid'] = 'false'
 		output['error_message'] = str(e)
-		
 	print json.dumps(output)
 		
 

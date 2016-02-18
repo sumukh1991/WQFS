@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 '''
+Authors:
 Sheifali Khare
-khare2@purdue.edu
+Sumukh Hallymysore Ravindra
 
 Generating excel worksheet for flow
 (C) Purdue University 2015
@@ -45,6 +46,8 @@ def add_vwctemp_header_row(outputWriter,inputDataArray,hutNumber):
 	headerrow.append(tile_id)
 	tile_id = 'H' + str(hutNumber) + '.LowBatteryError'
 	headerrow.append(tile_id)
+	# tile_id = 'H' + str(hutNumber) + '.LowVError'
+	# headerrow.append(tile_id)
 	if hutNumber != 7 and hutNumber != 1 :
 		tile_id = 'H' + str(hutNumber) + '.FloodError'
 		headerrow.append(tile_id)	
@@ -75,6 +78,7 @@ def create_vwc_temp_object(inputDataArray,hutNumber):
 		temp_obj.append(i['Hut'][hutNumber-1]['RadioError'])
 		temp_obj.append(i['Hut'][hutNumber-1]['SensorError'])
 		temp_obj.append(i['Hut'][hutNumber-1]['LowBattError'])
+		# temp_obj.append(i['Hut'][hutNumber-1]['LowV'])
 		#Hut A and G does not have FloodError record
 		
 		if hutNumber != 7 and hutNumber != 1:			
@@ -85,8 +89,12 @@ def create_vwc_temp_object(inputDataArray,hutNumber):
 				for x in i['Temp']:
 					if( x['hut'] == hutNumber and j['plotNumber'] == x['plotNumber'] and j['sensorType'] == x['sensorType']): 
 						temp_obj.append(x['calculatedValue'])
-		if('annotation' in i.keys()):
-			temp_obj.append(i['annotation'])
+		#Check if Annotation key has list items 
+		if(len(i['annotation'])):
+			#Iterate over the list, add the record if it belongs to the hut (through hutnumber)
+			for k in i['annotation']:
+				if(k['hut'] == hutNumber):
+					temp_obj.append(k['annotationText'])
 		arr_obj.append(temp_obj)
 	return arr_obj
 #Create Flow Header row
@@ -185,7 +193,6 @@ def main():
 		output['isValid'] = 'true'
 		output['success_message'] = "Files created"
 	except Exception as e:
-
 		output['isValid'] = 'false'
 		output['error_message'] = str(e)
 
