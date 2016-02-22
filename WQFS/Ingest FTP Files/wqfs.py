@@ -58,10 +58,17 @@ def find_rows(rows_dict,hut_name):
 		str_rows = [int(x) for x in rows_dict[hut_name].split(",")]
 	return str_rows
 
+# Find the rows modofied i.e; the rows which were deleted before it
+def find_rows_modified(rows_dict,hut_name):
+	str_rows = []
+	if hut_name in rows_dict:
+		str_rows = [str(x) for x in rows_dict[hut_name].split(",")]
+	# print str_rows
+	return str_rows
 
 def parse_file(filename,rows_modified_dict,rows_deleted_dict,hut_name):
 	global output
-	rows_modified = find_rows(rows_modified_dict,hut_name)
+	rows_modified = find_rows_modified(rows_modified_dict,hut_name)
 	rows_deleted = find_rows(rows_deleted_dict,hut_name)
 	# open our utf-16 encdode file for reading
 	with io.open(filename, 'r', encoding='utf-16-le') as fr:
@@ -69,7 +76,6 @@ def parse_file(filename,rows_modified_dict,rows_deleted_dict,hut_name):
 		newRowNo = 0
 		# iterate over each row
 		for rowNum, row in enumerate(fr):
-			
 			if rowNum not in rows_deleted:
 				output_data = output['266ac488-f15c-47df-815a-f00b06f04b0f'][newRowNo-1]
 				tmp4 = {'number': hut_number}
@@ -168,10 +174,20 @@ def parse_file(filename,rows_modified_dict,rows_deleted_dict,hut_name):
 					else:
 						output_data['calculatedtime'] = str(calc_time)
 					calc_time += 100
-					if newRowNo in rows_modified:
-						tmp5 = {}
-						tmp5['hut'] = hut_number
-						tmp5['annotationText'] = 'yes'
+
+					annotation = 'Removed following entries'
+					tmp5 = {}
+					tmp5['hut'] = hut_number
+					annotation_present = False
+					
+					# print rows_modified
+					for err in rows_modified:
+						if ('<<'+str(newRowNo) + '>>') in err:
+							annotation = annotation + str(' -->'+err.split('>>')[1])
+							annotation_present = True
+
+					if(annotation_present):
+						tmp5['annotationText'] = annotation
 						output_data['annotation'].append(tmp5)
 				newRowNo = newRowNo + 1
 
@@ -219,6 +235,7 @@ def main():
 	except Exception as e:
 		output['isValid'] = 'false'
 		output['error_message'] = str(e)
+		# print e
 	print json.dumps(output)
 
 '''

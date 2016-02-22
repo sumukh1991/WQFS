@@ -19,6 +19,7 @@ import itertools
 output = {
 	'isValid':'false'
 	}
+
 #Dictionary to store rows which have been deleted corresponding to the Hut
 rows_modified_dict = dict();
 rows_delete_dict = dict()
@@ -248,48 +249,67 @@ def check_file_columns(f,hcol_count,htile_count,hvwctemp_count):
 				status = False
 				errString = 'lowbatterror_count column is missing for Hut ' + hutName
 				errorMsg.append(errString)
-			#Hut A and G has missing floodError	
-			if(flooderror_count != 1 and (hutName != "G" or hutName != "A") ):					
+			#Hut A and G has missing floodError
+			if(flooderror_count != 1 and (hutName != "G" and hutName != "A") ):
 				status = False
 				errString = 'FloodError column is missing for Hut ' + hutName
 				errorMsg.append(errString)
 		return status, errorMsg
 
-		# Converts the date into julian date with 24hr time
+# Converts the date into julian date with 24hr time
 def convert_to_julian(date):
 	dt = datetime.strptime(date, '%m/%d/%Y %I:%M:%S %p')	
 	return dt
 	
 # Identify the extra rows in the excel sheet 
 def identify_rows_to_delete(f):
-	rows_delete = []
-	#If rows are greater than 25, then we identify the rows to be deleted
-	with io.open(f, 'r', encoding='utf-16-le') as fr:			
-		# iterate over each row
-		for rowNum, row in enumerate(fr):			
-			if rowNum == 0:
-				# Parse the header of the file into a list
-				header = [col for col in row.replace('\n','').split(',')]
-			else:
-				for colNum, col in enumerate(row.replace('\n','').split(',')):
-					# For second row, determine the previous time and for rest of the rows determine current
-					if header[colNum].find('UTC_minus') != -1 and rowNum == 1:
-						p_time = convert_to_julian(col)
-					elif header[colNum].find('UTC_minus') != -1:
-						# set the current time
-						c_time = convert_to_julian(col)
-						# determine difference in time
-						total_diff = c_time - p_time						
-						if total_diff < timedelta(minutes=58) or total_diff > timedelta(minutes=62):
+	loop_flag = True
+	try_line = 1
+	while loop_flag:
+		rows_delete = []
+		#If rows are greater than 25, then we identify the rows to be deleted
+		with io.open(f, 'r', encoding='utf-16-le') as fr:
+			erroneous_lines_count = 0
+			# iterate over each row
+			for rowNum, row in enumerate(fr):
+				if rowNum == 0:
+					# Parse the header of the file into a list
+					header = [col for col in row.replace('\n','').split(',')]
+				else:
+					for colNum, col in enumerate(row.replace('\n','').split(',')):
+						# For second row, determine the previous time and for rest of the rows determine current
+						if header[colNum].find('UTC_minus') != -1 and rowNum == try_line:
+							p_time = convert_to_julian(col)
+						elif header[colNum].find('UTC_minus') != -1 and rowNum < try_line:
 							rows_delete.append(rowNum)
-						else:
-							p_time = c_time
-	
+							erroneous_lines_count = erroneous_lines_count + 1
+						elif header[colNum].find('UTC_minus') != -1:
+							# set the current time
+							c_time = convert_to_julian(col)
+							# determine difference in time
+							total_diff = c_time - p_time						
+							if total_diff < timedelta(minutes=57) or total_diff > timedelta(minutes=63):
+								rows_delete.append(rowNum)
+								erroneous_lines_count = erroneous_lines_count + 1
+							else:
+								p_time = c_time
+		# print os.path.basename(f) + str(erroneous_lines_count)
+		# print num_lines(f)
+		if num_lines(f) == (erroneous_lines_count + 25):
+			loop_flag = False
+		elif num_lines(f) == try_line:
+			loop_flag = False
+			raise Exception('Error. Check the hourly entries of file: {0}'.format(os.path.basename(f)))
+		else:
+			try_line = try_line + 1
+	# print rows_delete
 	return rows_delete
 
 #Delete the extra rows from the file
 def delete_rows(f, rows_no_delete):
 	rows_retained = set()
+	#Save the details of the removed erroneous entries
+	rows_error = {}
 	#Get Hut Name
 	hutName = (str(f).split("_")[0].split("-"))[1]
 	# Read the lines into a variable - lines
@@ -308,12 +328,21 @@ def delete_rows(f, rows_no_delete):
 				#fr.write(line)
 			else:
 				rows_retained.add(newRowNum)
+				if newRowNum >= 24:
+					errRowNum = 24
+				else:
+					errRowNum = newRowNum
+				rows_error[rowNum] = '<<'+str(errRowNum) +'>>'+line.split(',')[0]
 			rowNum = rowNum + 1
-	#populate rows dictionary
-	rows_modified_dict[hutName] =  ",".join(str(x) for x in rows_retained)
-	#populate rows dictionary
-	rows_delete_dict[hutName] =  ",".join(str(x) for x in rows_no_delete)
+		if newRowNum != 25:
+			raise Exception("Error: Following file doesn't contain entries for each hour interval: {0}".format(os.path.basename(f)))
 	
+	if len(rows_no_delete):
+		#populate rows dictionary
+		rows_modified_dict[hutName] =  ",".join(str(value) for key, value in rows_error.iteritems())
+		#populate rows dictionary
+		rows_delete_dict[hutName] =  ",".join(str(x) for x in rows_no_delete)
+
 def fix_data_file(f):
 	problem_rows = []
 	p_hour = 0
@@ -362,7 +391,7 @@ def main():
 					raise Exception("Error: Files do not belong to same date.")
 				else:
 					previous_file_date = file_date
-				if num_lines(f) > 25:
+				if num_lines(f) >= 25:
 					fix_data_file(f)
 				elif num_lines(f) < 25:
 					err_file_list.append(os.path.basename(f))
@@ -389,11 +418,10 @@ def main():
 			date_val = int(file_dates[2])-2
 			if date_val < 10 :
 				date_val = '0'+str(date_val)
-			output['iso_date'] = file_dates[0] +'-'+ file_dates[1] +'-'+ date_val + 'T00:00:00'
+			output['iso_date'] = file_dates[0] +'-'+ file_dates[1] +'-'+ str(date_val) + 'T00:00:00'
 	except Exception as e:
 		output['error_message'] = str(e)
 	print json.dumps(output)
-		
 
 '''
 This is used in `best practice`
