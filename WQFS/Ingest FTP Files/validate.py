@@ -16,12 +16,17 @@ import json
 import csv
 import itertools
 
-output = {
+outputOverall = {
 	'isValid':'false'
 	}
 
+previous_file_date = ''
+
+# List to hold all the uploaded files
+all_files = []
+
 #Dictionary to store rows which have been deleted corresponding to the Hut
-rows_modified_dict = dict();
+rows_modified_dict = dict()
 rows_delete_dict = dict()
 # Dictionary for hut columns variable
 def create_column_hut_dict():
@@ -265,6 +270,7 @@ def convert_to_julian(date):
 def identify_rows_to_delete(f):
 	loop_flag = True
 	try_line = 1
+	global previous_file_date
 	while loop_flag:
 		rows_delete = []
 		#If rows are greater than 25, then we identify the rows to be deleted
@@ -276,6 +282,7 @@ def identify_rows_to_delete(f):
 					# Parse the header of the file into a list
 					header = [col for col in row.replace('\n','').split(',')]
 				else:
+					current_file_date = row.split(',')[0].split(' ')[0]
 					for colNum, col in enumerate(row.replace('\n','').split(',')):
 						# For second row, determine the previous time and for rest of the rows determine current
 						if header[colNum].find('UTC_minus') != -1 and rowNum == try_line:
@@ -293,6 +300,12 @@ def identify_rows_to_delete(f):
 								erroneous_lines_count = erroneous_lines_count + 1
 							else:
 								p_time = c_time
+			# Check if all the files belong to the same date, else abort
+			# Set the previous file date value the first time, do comparisons later on
+			if previous_file_date == '':
+				previous_file_date = current_file_date
+			elif previous_file_date != current_file_date:
+				raise Exception("Error: File/s do not belong to same date.")
 		# print os.path.basename(f) + str(erroneous_lines_count)
 		# print num_lines(f)
 		if num_lines(f) == (erroneous_lines_count + 25):
@@ -354,74 +367,143 @@ def fix_data_file(f):
 	rows_no_delete = identify_rows_to_delete(f)
 	# Delete extra rows
 	delete_rows(f, rows_no_delete)	
-	# Check if file has 25 rows
-	# if num_lines(f) > 25:
-		# raise Exception("Following files contains more than 24 entries: {0}".format(os.path.basename(f)))
-		
+
+# Verify if the dates are contiguous
+def verify_file_dates(file_date_list):
+	# Convert the string date values to date type
+	file_dates = [datetime.strptime(d, "%Y-%m-%d") for d in file_date_list]
+	file_date_ints = set([d.toordinal() for d in file_dates])
+	if max(file_date_ints) - min(file_date_ints) != (len(file_date_ints) - 1):
+		raise Exception("Error. Missing Files for few dates in between. Should be contiguous to upload.")
+	    
 '''Our main function of the file.
 This function searches the directory
 for files and passes each file to the
 funtion to be parsed.
 '''
+def parse_files_for_date(file_list, file_date):
+	'''
+	We have to use global to modify the value
+	of the variable outside the function because
+	the variable is global
+	'''
+	# print file_list
+	print '\n'
+	# Output for a set of input files related to a specific date
+	output = {'isValid':'false'}
+	# Initializing variables
+	num_files = 0
+	err_file_list = []
+	global previous_file_date
+	global rows_modified_dict
+	global rows_delete_dict
+	previous_file_date = ''
+	file_dates = []
+	huts_list = set()
+	hcol_dict = create_column_hut_dict()
+	htile_dict = create_tile_hut_dict()
+	hvwctemp_count = create_vwc_temp_count_dict()
+	# Iterate the current directory looking
+	# for the CSV files
+	for fname in file_list:
+		f = open(fname,'r')
+		# # Get the date-time fields from the file name to compare with other file names 
+		# file_dates = f.split('.')[0].split('_')[3].split('-')
+		# file_date = file_dates[0] +'-'+ file_dates[1] +'-'+ file_dates[2]
+		# # Verify if they belong to same date, abort if not
+		# if ( previous_file_date != '') and ( file_date != previous_file_date ):
+		# 	raise Exception("Error: Files do not belong to same date.")
+		# else:
+		# 	previous_file_date = file_date
+		f.read()
+		if num_lines(fname) >= 25:
+			fix_data_file(fname)
+		elif num_lines(fname) < 25:
+			err_file_list.append(fname)
+			raise Exception("Error: Following files contains less than 24 entries: {0}".format(','.join(err_file_list)))
+		status,errMsg = check_file_columns(fname,hcol_dict,htile_dict,hvwctemp_count)
+		if status == False:
+			raise Exception(str(errMsg))
+		huts_list.add(fname.split('.')[0].split('_')[0]) 
+		num_files += 1
+	if num_files == 0:
+		raise Exception('Error: There are no CSV files to upload.')
+	elif num_files != 12:
+		raise Exception('Error: Expecting 12 files to be uploaded. Found '+str(num_files)+' for date '+previous_file_date)
+	else:
+		num_files = 0
+		for hut in huts_list:
+			num_files += 1
+		if num_files != 12:
+			raise Exception('Error: Duplicate files found.')
+		output['rows_modified'] = rows_modified_dict
+		output['rows_deleted'] = rows_delete_dict
+		output['success_message'] = 'The files were successfully uploaded.'
+		# print previous_file_date
+		file_dates = previous_file_date.split('/')
+		date_val = int(file_dates[2])
+		if date_val < 10 :
+			date_val = '0'+str(date_val)
+		iso_date = file_dates[0] +'-'+ file_dates[1] +'-'+ str(date_val) 
+		output['iso_date'] = iso_date + 'T00:00:00'
+		output['file_date'] = file_date
+		output['isValid'] = 'true'
+	rows_modified_dict = {}
+	rows_delete_dict = {}
+	# print json.dumps(output)
+	return output, iso_date
+
 def main():
 	'''
 	We have to use global to modify the value
 	of the variable outside the function because
 	the variable is global
 	'''
-	global output	 
-	num_files = 0
-	err_file_list = []
-	hcol_dict = create_column_hut_dict()
-	htile_dict = create_tile_hut_dict()
-	hvwctemp_count = create_vwc_temp_count_dict()
+	global output
+	global all_files
+	# Set to hold the different unique dates the file belongs
+	unique_dates_set = set()
+	# List to hold the dates so they can be sorted according to the date
+	unique_dates_list = []
+	output_list = []
+	output_dict = {}	 
 	try:
-		previous_file_date = ''
-		file_dates = ''
-		huts_list = set();
-		# Iterate the current directory looking
-		# for the CSV files
+		# Iterate through all the .csv files and get the unique dates the files belong to from their file names
 		for f in os.listdir(os.getcwd()):
 			if f.endswith('.csv'):
-				# Get the date-time fields from the file name to compare with other file names 
+				# Get the date-time fields from the file name
 				file_dates = f.split('.')[0].split('_')[3].split('-')
 				file_date = file_dates[0] +'-'+ file_dates[1] +'-'+ file_dates[2]
-				# Verify if they belong to same date, abort if not
-				if ( previous_file_date != '') and ( file_date != previous_file_date ):
-					raise Exception("Error: Files do not belong to same date.")
-				else:
-					previous_file_date = file_date
-				if num_lines(f) >= 25:
-					fix_data_file(f)
-				elif num_lines(f) < 25:
-					err_file_list.append(os.path.basename(f))
-					raise Exception("Error: Following files contains less than 24 entries: {0}".format(','.join(err_file_list)))
-				status,errMsg = check_file_columns(f,hcol_dict,htile_dict,hvwctemp_count)
-				if status == False:
-					raise Exception(str(errMsg))
-				huts_list.add(f.split('.')[0].split('_')[0]) 
-				num_files += 1
-		if num_files == 0:
+				unique_dates_set.add(str(file_date))
+				all_files.append(os.path.basename(f))
+		if len(all_files) == 0:
 			raise Exception('Error: There are no CSV files to upload.')
-		elif num_files != 12:
-			raise Exception('Error: Expecting 12 files to be uploaded. Found '+str(num_files))
+		# elif len(all_files) % 12 != 0:
+		# 	raise Exception('Error: Few files are missing. Please recheck if files are present for all the huts, for all the dates')
 		else:
-			num_files = 0
-			for hut in huts_list:
-				num_files += 1
-			if num_files != 12:
-				raise Exception('Error: Duplicate files found.')
-			output['isValid'] = 'true'
-			output['rows_modified'] = rows_modified_dict
-			output['rows_deleted'] = rows_delete_dict
-			output['success_message'] = 'The files were successfully uploaded.'
-			date_val = int(file_dates[2])-2
-			if date_val < 10 :
-				date_val = '0'+str(date_val)
-			output['iso_date'] = file_dates[0] +'-'+ file_dates[1] +'-'+ str(date_val) + 'T00:00:00'
+			# Convert the unique_dates_set (enforces uniqueness) to unique_dates_list (so we can sort the list) by iterating over the set items
+			for dates in unique_dates_set:
+				unique_dates_list.append(dates)
+			unique_dates_list.sort(key=lambda date: datetime.strptime(date, "%Y-%m-%d"))
+			print unique_dates_list
+			# Need to verify before proceeding ahead if the files are continuous, before proceeding further
+			verify_file_dates(unique_dates_list)
+			# Group the files belonging to the same date and pass the list to be validated
+			for file_date in unique_dates_list:
+				files_grouped_by_date = [file_name for file_name in all_files if file_date in file_name]
+				# outputOverall[file_date] = parse_files_for_date(files_grouped_by_date)
+				retured_output , iso_date = parse_files_for_date(files_grouped_by_date, file_date)
+				output_dict[iso_date] = retured_output
+				output_list.append(output_dict)
+				output_dict = {}
+				# print output_list
+			outputOverall['result'] = output_list
+			outputOverall['success_message'] = 'The files were successfully uploaded.'
+			outputOverall['isValid'] = 'true'
 	except Exception as e:
-		output['error_message'] = str(e)
-	print json.dumps(output)
+		outputOverall['error_message'] = str(e)
+	print json.dumps(outputOverall)
+
 
 '''
 This is used in `best practice`
