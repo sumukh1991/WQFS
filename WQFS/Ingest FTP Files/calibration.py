@@ -6,18 +6,17 @@ west1@purdue.edu
 Parsing WQFS Data Files
 (C) Purdue University 2015
 '''
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import io
 import sys
 import json
 import csv
-
-
+import collections
+from operator import itemgetter
 
 output = {
-	'isValid':'true' ,
-	'266ac488-f15c-47df-815a-f00b06f04b0f': ''
+	'isValid':'false'
 	}
 sensor_dict = dict()
 sensor_dict[1] = "Shallow"
@@ -47,14 +46,16 @@ def calculate_difference_in_tips(inputDataArray,previousDayArray):
 	for plots in inputDataArray :
 		for tile in plots['Flows'] :
 			previousTipCount = find_previous_hour_tip_count(plots["calculatedtime"],inputDataArray,previousDayArray,tile['hut'],tile['sensorNumber'])
+			# print previousTipCount
 			tile["differenceInTips"] = float(tile["numberOfTips"]) - float(previousTipCount)
+
 			
 			
 #Find no of tips in previous hour
 def find_previous_hour_tip_count(currenthour,currentDayArray,previousDayArray,hutNumber,sensorNumber):
 	previousTipCount = 0
 	previousHour = int(currenthour) - 100
-	if(int(previousHour) == 0):		
+	if(int(previousHour) == 0):	
 		for plots in previousDayArray:
 			if int(plots['calculatedtime']) == int(2400) :
 				for tile in plots['Flows'] :
@@ -69,6 +70,7 @@ def find_previous_hour_tip_count(currenthour,currentDayArray,previousDayArray,hu
 						previousTipCount = tile["numberOfTips"]						
 						break;	
 	return previousTipCount
+
 ''' Convert temp value based on sensor type.
  Sensor 20-999 are scaled. 
  Divide the temp value by 10
@@ -94,6 +96,19 @@ def convert_vwc_values(inputDataArray):
 			else:
 				row['calculatedValue'] =  float(row['rawValue'])
 			row['sensorLocation'] = sensor_dict[row['sensorType']]
+
+
+# Convert the unicode code array of dictionary into ascii string ditionary format
+def convert(data):
+    if isinstance(data, basestring):
+        return str(data)
+    elif isinstance(data, collections.Mapping):
+        return dict(map(convert, data.iteritems()))
+    elif isinstance(data, collections.Iterable):
+        return type(data)(map(convert, data))
+    else:
+        return data
+
 '''
 Our main function of the file.
 This function searches the directory
@@ -109,38 +124,68 @@ def main():
 	global output
 	try:	
 		inputData = sys.stdin.read()
+		
 		fw = open("jsonCalibrationInput", "w")
 		fw.write(inputData)
 		fw.close()
 		
-		data = inputData.split(";")
-		#print data
-		inputDataArray = json.loads(data[0])
-		calibrationKeyArray = json.loads(data[1])
-		previousDayArray = json.loads(data[2])
+		data = json.loads(inputData)
+		# print data
+		data = convert(data)
+		# print data
+		inputDataArray = data['result']
+		calibrationKeyArray = data['calibration_values']
+		previousDayArray = data['previous_day_values']
+		isoDay = data['iso_day']
+		first_parse = data['first_parse']
+		iterate_count = int(data['iterate_count'])
+
+		# Variable to hold the already computed data of previous days from the finaloutput file 
+		result = []
+		
+		fd = os.open("finalOutput", os.O_RDWR | os.O_CREAT)
+
+		fw = os.fdopen(fd,"r+")
+
+		if first_parse == 'false':
+			# Get the previous day records stored in the finalouput file
+			result = json.load(fw)
+			previousDayArray = itemgetter(slice((iterate_count - 1)*24,(iterate_count - 1)*24+24))(result)
+			previousDayArray = convert(previousDayArray)
 		
 		calculate_difference_in_tips(inputDataArray,previousDayArray)
 		convert_tips_to_flow(inputDataArray,calibrationKeyArray)
 		convert_temp_values(inputDataArray)
 		convert_vwc_values(inputDataArray)
+
+		# Since the file is read already, move the file header from EOF back to the start
+		fw.seek(0)
+		# Check if the file is empty
+		if os.stat("finalOutput").st_size != 0:
+			result = json.load(fw)
+			# result = outputFile['266ac488-f15c-47df-815a-f00b06f04b0f']
+		else:
+			outputFile = {}
+
+		# Append the data computed in the current iteration to the previous results
+		for hut in inputDataArray:
+			result.append(hut)
 		
-		fw = open("jsonCalibrationOutput", "w")
-		fw.write(json.dumps(inputDataArray))
+		fw.seek(0)
+		# Write the results to the finaloutput file
+		fw.write(json.dumps(result))
 		fw.close()
-		
-		output['266ac488-f15c-47df-815a-f00b06f04b0f'] = inputDataArray
-		output['success_message'] = 'Files uploaded succesfully and data calibrated as expected.'
+
+		output['last_file_read'] = isoDay
+		output['success_message'] = 'Files uploaded succesfully and data calibrated as expected for :'+ isoDay
+		output['isValid'] = 'true'
+
 	except Exception as e:
 		#If there is an error with parsing catch it and send it
-		output['isValid'] = 'false'
-		del output['266ac488-f15c-47df-815a-f00b06f04b0f']
 		output['error_message'] = str(e)
 
 	print json.dumps(output)
 	
-	
-	
-
 
 '''
 This is used in `best practice`

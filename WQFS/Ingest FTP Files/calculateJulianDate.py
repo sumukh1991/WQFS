@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 '''
+Authors:
 Sheifali Khare
-khare2@purdue.edu
+Sumukh Hallymysore Ravindra
 
 Calculate Julian Day and Year. ALso identify the previous JDay
 (C) Purdue University 2015
@@ -13,13 +14,12 @@ import sys
 import json
 import csv
 
-
 currJDay = 0
 currYear = 0
 prevJDay = 0
 prevJyear = 0
 output = {
-	'isValid':'true'   
+	'isValid':'false'   
 	}
 sensor_dict = dict()
 sensor_dict[1] = "Shallow"
@@ -53,12 +53,14 @@ def calculateJulianDay(inputDataArray):
 '''Calculate ISO Day format for many reason'''
 def calculateISODay(inputDataArray):
 	global currJDay
-	global currYear	 
+	global currYear
+	global currIsoDay	 
 	for i in inputDataArray:
 		'''the current day is reduced by 1, because while calculating isoDay in the line below - we begin from day 1 and then add no of days to it.
 		So we need to substract the no of days by 1'''
 		jtempday = int(currJDay) - 1
 		i['isoDay'] = str((datetime(currYear, 1, 1) + timedelta(jtempday)).isoformat())
+		currIsoDay = str(datetime(currYear, 1, 1) + timedelta(jtempday))
 
 def calculatePreviousDay():
 	global prevJDay
@@ -82,7 +84,6 @@ def calculateprevJdayJyear():
 	else:
 		prevJyear = currYear
 	
-	
 '''
 Our main function of the file.
 This function searches the directory
@@ -98,41 +99,35 @@ def main():
 	global output
 	global currJDay
 	global currYear
+	global currIsoDay
 	try:	
 		inputData = sys.stdin.read()
-		# For debug purpose - write data into file
-		fw = open("jsonCalculateJulianDateInput", "w")
-		fw.write(inputData)
-		fw.close()
-		# Parse data 
-		data = inputData.split(";");
-		inputDataArray = json.loads(data[0])
-		# First calcuate Julain day and then calulate ISO Day 
+		# Parse json data through STD_IN fd 
+		data = json.loads(inputData)
+		isoDay = data["iso_day"]
+		inputDataArray = data["result"]
+
+		# First calcuate Julian day and then calulate ISO Day 
 		calculateJulianDay(inputDataArray)
+		
 		calculateISODay(inputDataArray)
+
 		#Calculate previous julian day and year
 		calculateprevJdayJyear()
-		
+
+		output['iso_day'] = isoDay
 		output['prevJDay'] = prevJDay
 		output['year'] = prevJyear
 		output['previousDay'] = calculatePreviousDay()
-		output['266ac488-f15c-47df-815a-f00b06f04b0f'] = inputDataArray
-		output['success_message'] = 'Convert to juilan date and calculatedDay term updated'		
-		
-		# For debug purpose - write data into file
-		fw = open("jsonCalculateJulianDateOutput", "w")
-		fw.write(json.dumps(output))
-		fw.close()	
-	except Exception as e:
-		output['isValid'] = 'false'
-		del output['266ac488-f15c-47df-815a-f00b06f04b0f']
-		output['error_message'] = str(e)
-	
-	print json.dumps(output)
-	
-	
-	
+		output['result'] = inputDataArray
+		output['success_message'] = 'Convert to julian date and calculatedDay term updated'
+		output['first_parse'] = data['first_parse']
+		output['iterate_count'] = data['iterate_count']
+		output['isValid'] = 'true'
 
+	except Exception as e:
+		output['error_message'] = str(e)
+	print json.dumps(output)
 
 '''
 This is used in `best practice`
