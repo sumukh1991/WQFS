@@ -125,6 +125,7 @@ def main():
 	try:	
 		inputData = sys.stdin.read()
 		
+		# For debugging purpose
 		fw = open("jsonCalibrationInput", "w")
 		fw.write(inputData)
 		fw.close()
@@ -140,6 +141,9 @@ def main():
 		first_parse = data['first_parse']
 		iterate_count = int(data['iterate_count'])
 
+		if len(calibrationKeyArray) == 0:
+			raise Exception('Calibration records not found for: ' + isoDay)
+
 		# Variable to hold the already computed data of previous days from the finaloutput file 
 		result = []
 		
@@ -152,7 +156,7 @@ def main():
 			result = json.load(fw)
 			previousDayArray = itemgetter(slice((iterate_count - 1)*24,(iterate_count - 1)*24+24))(result)
 			previousDayArray = convert(previousDayArray)
-		
+
 		calculate_difference_in_tips(inputDataArray,previousDayArray)
 		convert_tips_to_flow(inputDataArray,calibrationKeyArray)
 		convert_temp_values(inputDataArray)

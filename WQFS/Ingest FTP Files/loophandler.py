@@ -43,9 +43,10 @@ def main():
 		data = json.loads(inputData)
 		last_file_read = data['last_file_read']
 		isValid = data['isValid']
+		error_message = data['error_message']
 
 		if not isValid:
-			raise Exception('Error: Something went wrong during data calibration. Please check.')
+			raise Exception('Error: '+ str(error_message))
 
 		# data = inputData.split(";")
 		# last_file_read = data[0]

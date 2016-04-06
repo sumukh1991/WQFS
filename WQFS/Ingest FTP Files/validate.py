@@ -5,7 +5,7 @@ Craig West
 Sheifali Khare
 Sumukh Hallymysore Ravindra
 
-Parsing WQFS Data Files
+Validating the uploaded files and sanity of its contents
 (C) Purdue University 2015
 '''
 from datetime import datetime, timedelta
