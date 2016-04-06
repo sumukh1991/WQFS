@@ -35,10 +35,16 @@ def add_vwctemp_header_row(outputWriter,inputDataArray,hutNumber):
 	headerrow.append(tile_id)
 	tile_id = 'H' + str(hutNumber) + '.Battery (V)'
 	headerrow.append(tile_id)
+	tile_id = 'H' + str(hutNumber) + '.LOWV'
+	headerrow.append(tile_id)
 	tile_id = 'H' + str(hutNumber) + '.ScriptError'
 	headerrow.append(tile_id)
 	if hutNumber != 7 :
 		tile_id = 'H' + str(hutNumber) + '.InternalError'
+		headerrow.append(tile_id)
+	# Only Huts I,J,K,L have SerialError record
+	if hutNumber in (9, 10, 11, 12) :
+		tile_id = 'H' + str(hutNumber) + '.SerialError'
 		headerrow.append(tile_id)
 	tile_id = 'H' + str(hutNumber) + '.RadioError'
 	headerrow.append(tile_id)
@@ -71,16 +77,18 @@ def create_vwc_temp_object(inputDataArray,hutNumber):
 		temp_obj.append(i['Hut'][hutNumber-1]['T1']) 
 		temp_obj.append(i['Hut'][hutNumber-1]['SOL'])
 		temp_obj.append(i['Hut'][hutNumber-1]['BATT'])
+		temp_obj.append(i['Hut'][hutNumber-1]['LOWV'])
 		temp_obj.append(i['Hut'][hutNumber-1]['ScriptError'])
-		#Hut G does not have InternalError record
+		# Hut G does not have InternalError record
 		if hutNumber != 7 :
 			temp_obj.append(i['Hut'][hutNumber-1]['InternalError'])
+		# Only Huts I,J,K,L have SerialError record
+		if hutNumber in (9, 10, 11, 12) :
+			temp_obj.append(i['Hut'][hutNumber-1]['SerialError'])
 		temp_obj.append(i['Hut'][hutNumber-1]['RadioError'])
 		temp_obj.append(i['Hut'][hutNumber-1]['SensorError'])
 		temp_obj.append(i['Hut'][hutNumber-1]['LowBattError'])
-		# temp_obj.append(i['Hut'][hutNumber-1]['LowV'])
 		#Hut A and G does not have FloodError record
-		
 		if hutNumber != 7 and hutNumber != 1:			
 			temp_obj.append(i['Hut'][hutNumber-1]['FloodError'])
 		for j in i['VWC'] :
