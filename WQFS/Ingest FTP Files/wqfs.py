@@ -18,6 +18,9 @@ import collections
 
 output = {}
 
+# Date after which hut files for B and G have different header format
+specific_date = datetime.strptime('2016-01-17', '%Y-%m-%d')
+
 # Dictionary for hut variable
 def create_hut_dict():
 	hut_dict = dict()
@@ -34,8 +37,6 @@ def create_hut_dict():
 	hut_dict['K'] = 11
 	hut_dict['L'] = 12
 	return hut_dict
-
-
 
 # Read how many lines are in a file
 def num_lines(filename):
@@ -63,8 +64,9 @@ def find_rows_modified(rows_dict,hut_name):
 	# print str_rows
 	return str_rows
 
-def parse_file(filename,rows_modified_dict,rows_deleted_dict,hut_name):
+def parse_file(filename,rows_modified_dict,rows_deleted_dict,hut_name,file_date):
 	global output
+	file_date = datetime.strptime(file_date, '%Y-%m-%d')
 	rows_modified = find_rows_modified(rows_modified_dict,hut_name)
 	rows_deleted = find_rows(rows_deleted_dict,hut_name)
 	# open our utf-16 encdode file for reading
@@ -101,6 +103,8 @@ def parse_file(filename,rows_modified_dict,rows_deleted_dict,hut_name):
 						which is stored in tmp4.
 						'''
 
+						# print "3a." + str(hut_name)
+
 						if header[colNum].find('UTC_minus') != -1:
 							tmp5 = {}
 							tmp5['hut'] = hut_number
@@ -119,8 +123,16 @@ def parse_file(filename,rows_modified_dict,rows_deleted_dict,hut_name):
 							tmp2 = {}
 							tmp2['hut'] = hut_number
 							tmp2['sensorNumber'] = int(header[colNum].split(" - ")[0])
-							tmp2['plotNumber'] = header[colNum].split(" - ")[1].split(".")[0]
-							tmp2['sensorType'] = int(header[colNum].split(" - ")[1].split(".")[1][1])
+							if file_date > specific_date:
+								if hut_name =='B' or hut_name =='G':
+									tmp2['plotNumber'] = header[colNum].split(" - ")[1].split("_")[0]
+									tmp2['sensorType'] = int(header[colNum].split(" - ")[1].split("_")[1][1])
+								else:
+									tmp2['plotNumber'] = header[colNum].split(" - ")[1].split(".")[0]
+									tmp2['sensorType'] = int(header[colNum].split(" - ")[1].split(".")[1][1])
+							else:
+								tmp2['plotNumber'] = header[colNum].split(" - ")[1].split(".")[0]
+								tmp2['sensorType'] = int(header[colNum].split(" - ")[1].split(".")[1][1])
 							tmp2['rawValue'] = float(col)
 							tmp2['calculatedValue'] = 0
 							output_data['VWC'].append(tmp2)
@@ -129,8 +141,22 @@ def parse_file(filename,rows_modified_dict,rows_deleted_dict,hut_name):
 							tmp3 = {}
 							tmp3['hut'] = hut_number
 							tmp3['sensorNumber'] = int(header[colNum].split(" - ")[0])
-							tmp3['sensorType'] = int(header[colNum].split(" - ")[1].split(".")[1][1])
-							tmp3['plotNumber'] = header[colNum].split(" - ")[1].split(".")[0]					
+							if file_date > specific_date:
+								if hut_name =='B' or hut_name =='G':
+									tmp3['plotNumber'] = header[colNum].split(" - ")[1].split("_")[0]
+									# Hut B files have column header mistake
+									# Handling this case separately
+									if tmp3['plotNumber'] == "P5BS1":
+										tmp3['plotNumber'] = header[colNum].split(" - ")[1].split("_")[0].split("S")[0]
+										tmp3['sensorType'] = int(header[colNum].split(" - ")[1].split("_")[0][4])
+									else:
+										tmp3['sensorType'] = int(header[colNum].split(" - ")[1].split("_")[1][1])	
+								else:
+									tmp3['plotNumber'] = header[colNum].split(" - ")[1].split(".")[0]
+									tmp3['sensorType'] = int(header[colNum].split(" - ")[1].split(".")[1][1])
+							else:
+								tmp3['plotNumber'] = header[colNum].split(" - ")[1].split(".")[0]
+								tmp3['sensorType'] = int(header[colNum].split(" - ")[1].split(".")[1][1])			
 							tmp3['rawValue'] = float(col)
 							tmp3['calculatedValue'] = 0
 							output_data['Temp'].append(tmp3)
@@ -167,6 +193,9 @@ def parse_file(filename,rows_modified_dict,rows_deleted_dict,hut_name):
 
 						elif header[colNum].find('SerialError') != -1:
 							tmp4['SerialError'] = int(col)
+
+						# else:
+							# print "Error." + str(hut_name)
 
 					output_data['Hut'].append(tmp4)
 					if int(calc_time) < 1000 :
@@ -232,7 +261,7 @@ def parse_each_date(file_records, iso_date):
 			# print os.path.basename(f)
 			hutName = str(f).split("_")[0].split("-")			
 			hut_number = hut_num_dict[str(hutName[1])] 
-			parse_file(f,rows_modified_dict,rows_deleted_dict,hutName[1])
+			parse_file(f,rows_modified_dict,rows_deleted_dict,hutName[1], file_date)
 	# print json.dumps(output)
 	return output
 
@@ -266,7 +295,7 @@ def main():
 		# # DB query 
 		# previous_records = json.loads(data[1])
 
-		if len(previous_records) != 0:
+		if previous_records:
 			previous = set()
 			for record in previous_records:
 				previous.add(record)

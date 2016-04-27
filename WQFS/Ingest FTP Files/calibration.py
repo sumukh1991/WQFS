@@ -156,7 +156,7 @@ def main():
 			result = json.load(fw)
 			previousDayArray = itemgetter(slice((iterate_count - 1)*24,(iterate_count - 1)*24+24))(result)
 			previousDayArray = convert(previousDayArray)
-
+		
 		calculate_difference_in_tips(inputDataArray,previousDayArray)
 		convert_tips_to_flow(inputDataArray,calibrationKeyArray)
 		convert_temp_values(inputDataArray)

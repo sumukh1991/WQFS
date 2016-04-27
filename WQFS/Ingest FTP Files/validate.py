@@ -144,7 +144,7 @@ def check_file_columns(f,hcol_count,htile_count,hvwctemp_count):
 		reader1 = csv.reader(fr)
 		rowheader = next(reader1)
 		columns = len(rowheader)
-		if(hcol_count[hutName] == columns):
+		if(columns >= hcol_count[hutName]):
 			status = True
 		else:
 			tmp1_tilenum = []
@@ -428,7 +428,7 @@ def parse_files_for_date(file_list, file_date):
 		f.read()
 		if num_lines(fname) >= 25:
 			fix_data_file(fname)
-		elif num_lines(fname) < 25:
+		elif num_lines(fname) < 24:
 			err_file_list.append(fname)
 			raise Exception("Error: Following files contains less than 24 entries: {0}".format(','.join(err_file_list)))
 		status,errMsg = check_file_columns(fname,hcol_dict,htile_dict,hvwctemp_count)
